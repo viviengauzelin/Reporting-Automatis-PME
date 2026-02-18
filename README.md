@@ -100,9 +100,52 @@ Traitement ponctuel
 
 Analyse exploratoire
 
-Regarder les images dans le dossier assets pour un aperçu de l'interface.
+---
+
+# 🖥 Aperçu de l’interface
+
+## 1️⃣ Upload des fichiers Excel
+
+<img src="assets/streamlit_automatisation_demo_1.png" width="900">
+
+Interface permettant l’import de plusieurs fichiers `.xlsx` simultanément, avec détection automatique des doublons.
 
 ---
+
+## 2️⃣ Mapping des colonnes
+
+<img src="assets/streamlit_automatisation_demo_2.png" width="900">
+
+Sélection guidée des colonnes nécessaires (Date, Montant, Commercial) avec validation des incohérences.
+
+---
+
+## 3️⃣ Résumé & Reporting
+
+<img src="assets/streamlit_automatisation_demo_3.png" width="900">
+
+Affichage des indicateurs clés :
+
+- Nombre de fichiers traités  
+- Lignes avant/après nettoyage  
+- Qualité des données  
+- Chiffre d’affaires total  
+- Reporting mensuel et par commercial  
+
+---
+
+## 4️⃣ Téléchargement des résultats
+
+<img src="assets/streamlit_automatisation_demo_4.png" width="900">
+
+Export immédiat :
+
+- Excel multi-feuilles formaté  
+- Rapport PDF  
+- Log d’exécution complet (audit & traçabilité)  
+
+---
+
 
 # 🧪 Données de démonstration
 
