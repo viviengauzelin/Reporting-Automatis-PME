@@ -100,28 +100,28 @@ Analyse exploratoire
 
 1️⃣ Upload des fichiers Excel
 
-<img src="assets/streamlit_automatisation_demo_1" width="900">
+<img src="assets/streamlit_automatisation_demo_1.png" width="900">
 
 Interface permettant l’import de plusieurs fichiers `.xlsx` simultanément, avec détection automatique des doublons.
 
 
 2️⃣ Mapping des colonnes
 
-<img src="assets/streamlit_automatisation_demo_2.PNG" width="900">
+<img src="assets/streamlit_automatisation_demo_2.png" width="900">
 
 Sélection guidée des colonnes nécessaires (Date, Montant, Commercial) avec validation des incohérences.
 
 
 3️⃣ Résumé & Reporting
 
-<img src="assets/streamlit_automatisation_demo_3.PNG" width="900">
+<img src="assets/streamlit_automatisation_demo_3.png" width="900">
 
 Affichage des indicateurs clés
 
 
 4️⃣ Téléchargement des résultats
 
-<img src="assets/streamlit_automatisation_demo_4.PNG" width="900">
+<img src="assets/streamlit_automatisation_demo_4.png" width="900">
 
 Export immédiat :
 
