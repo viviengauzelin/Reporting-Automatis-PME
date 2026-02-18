@@ -46,9 +46,11 @@ Lecture automatique des fichiers déposés dans :
 
 data/
 
+
 Génération des résultats dans :
 
 output/<ANNEE>/
+
 
 Fichiers produits :
 
@@ -58,8 +60,8 @@ Fichiers produits :
 
 #### Lancer :
 
+```bash
 python main.py
-
 Idéal pour :
 
 Exécution planifiée
@@ -69,7 +71,6 @@ Traitement mensuel
 Intégration dans un flux interne
 
 2️⃣ Interface Web (Streamlit)
-
 Interface utilisateur interactive :
 
 Upload des fichiers Excel
@@ -83,9 +84,7 @@ Génération instantanée
 Téléchargement Excel / PDF / Log
 
 Lancer :
-
 streamlit run app.py
-
 Idéal pour :
 
 Utilisateur non technique
@@ -97,17 +96,13 @@ Analyse exploratoire
 Consulter le dossier assets/ pour un aperçu de l’interface.
 
 🧪 Données de démonstration
-
 Pour tester le projet :
 
 python generate_demo_data.py
-
 Cela crée automatiquement plusieurs fichiers Excel simulés dans :
 
 data/
-
 🏗 Architecture du projet
-
 project/
 │
 ├── app.py
@@ -120,26 +115,18 @@ project/
 ├── data/      # non versionné
 ├── output/    # non versionné
 └── venv/      # non versionné
-
 ⚙ Installation
 1️⃣ Créer un environnement virtuel
-
 python -m venv venv
-
 Activation (Windows) :
 
 venv\Scripts\activate
-
 Si PowerShell bloque :
 
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-
 2️⃣ Installer les dépendances
-
 pip install -r requirements.txt
-
 🧾 Traçabilité & Audit
-
 Chaque exécution enregistre :
 
 Horodatage précis
@@ -157,7 +144,6 @@ Résumé financier
 Objectif : pouvoir justifier un résultat à tout moment.
 
 🔐 Sécurité & Bonnes pratiques
-
 Aucun code client n’est exécuté
 
 Validation des types et conversions sécurisées
@@ -169,7 +155,6 @@ Données non versionnées
 Logs exploitables en cas de contrôle
 
 💼 Cas d’usage
-
 Consolidation mensuelle des ventes
 
 Reporting commercial multi-fichiers
@@ -181,7 +166,6 @@ Vérification cohérence exports CRM
 Analyse interne direction
 
 📈 Valeur ajoutée
-
 Gain estimé :
 
 1 à 3 heures économisées par mois
@@ -193,7 +177,6 @@ Meilleure traçabilité
 Standardisation du reporting
 
 🧠 Technologies
-
 Python 3.10+
 
 Pandas
@@ -207,7 +190,6 @@ Streamlit
 Git
 
 👨‍💻 Auteur
-
 Vivien Gauzelin
 Ingénieur – Automatisation de données pour PME
 
