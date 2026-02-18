@@ -20,7 +20,7 @@ Idéal pour un usage simple et rapide.
 
 📂 Déposer les fichiers
 
-Déposez vos exports Excel (.xlsx) dans le dossier :
+Déposez vos exports Excel (.xlsx) dans un dossier à créer :
 
 data/
 
@@ -92,7 +92,7 @@ Lancer :
 py generate_demo_data.py
 
 
-Cela génère automatiquement plusieurs fichiers Excel de démonstration dans le dossier :
+Cela génère automatiquement plusieurs fichiers Excel de démonstration dans un dossier :
 
 data/
 
