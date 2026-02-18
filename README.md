@@ -4,7 +4,7 @@
 ![Streamlit](https://img.shields.io/badge/Interface-Streamlit-red)
 ![Statut](https://img.shields.io/badge/Statut-Demo%20Professionnelle-success)
 
-Solution d’automatisation de consolidation et de reporting Excel destinée aux PME.
+Outil automatisé de consolidation et reporting Excel pour PME.
 
 Objectif : transformer des exports Excel bruts en reporting exploitable, propre et traçable, en quelques secondes.
 
