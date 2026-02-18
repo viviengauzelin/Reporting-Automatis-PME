@@ -6,62 +6,62 @@
 
 Outil automatisé de consolidation et reporting Excel pour PME.
 
-**Objectif :** transformer des exports Excel bruts en reporting exploitable, propre et traçable, en quelques secondes.
+Objectif : transformer des exports Excel bruts en reporting exploitable, propre et traçable, en quelques secondes.
 
 ---
 
-## 🎯 Problématique PME
+# 🎯 Problématique PME
 
 De nombreuses PME :
 
-- Consolident manuellement plusieurs exports Excel  
-- Refont les mêmes manipulations chaque mois  
-- Perdent du temps sur le nettoyage des données  
-- Manquent de traçabilité en cas d’erreur  
-- N’ont pas d’outil simple pour produire un reporting clair  
+- Consolident manuellement plusieurs exports Excel
+- Refont les mêmes manipulations chaque mois
+- Perdent du temps sur le nettoyage des données
+- Manquent de traçabilité en cas d’erreur
+- N’ont pas d’outil simple pour produire un reporting clair
 
 Cette solution automatise l’ensemble du processus.
 
 ---
 
-## ✅ Fonctionnalités
+# ✅ Fonctionnalités
 
-- ✔ Consolidation automatique de multiples fichiers Excel  
-- ✔ Nettoyage et normalisation des données  
-- ✔ Détection d’erreurs (dates invalides, montants incorrects)  
-- ✔ Reporting mensuel  
-- ✔ Reporting par commercial  
-- ✔ Export Excel multi-feuilles  
-- ✔ Génération PDF  
-- ✔ Log d’exécution détaillé (audit & traçabilité)  
-- ✔ Empreinte SHA256 des fichiers source  
+✔ Consolidation automatique de multiples fichiers Excel  
+✔ Nettoyage et normalisation des données  
+✔ Détection d’erreurs (dates invalides, montants incorrects)  
+✔ Reporting mensuel  
+✔ Reporting par commercial  
+✔ Export Excel multi-feuilles  
+✔ Génération PDF  
+✔ Log d’exécution détaillé (audit & traçabilité)  
+✔ Empreinte SHA256 des fichiers source  
 
 ---
 
-## 🚀 Modes de fonctionnement
+# 🚀 Modes de fonctionnement
 
-### 1️⃣ Mode Batch (automatisation locale)
+## 1️⃣ Mode Batch (automatisation locale)
 
-Lecture automatique des fichiers déposés dans :
+Lecture automatique des fichiers déposés dans (dossier à créer) :
 
 data/
-
 
 Génération des résultats dans :
 
 output/<ANNEE>/
 
-
 Fichiers produits :
 
-- reporting_YYYY-MM_to_YYYY-MM.xlsx  
-- rapport_YYYY-MM_to_YYYY-MM.pdf  
-- log_YYYY-MM-DD.txt  
+- reporting_YYYY-MM_to_YYYY-MM.xlsx
+- rapport_YYYY-MM_to_YYYY-MM.pdf
+- log_YYYY-MM-DD.txt
 
-#### Lancer :
+### Lancer :
 
 ```bash
 python main.py
+```
+
 Idéal pour :
 
 Exécution planifiée
@@ -70,7 +70,10 @@ Traitement mensuel
 
 Intégration dans un flux interne
 
-2️⃣ Interface Web (Streamlit)
+---
+
+## 2️⃣ Interface Web (Streamlit)
+
 Interface utilisateur interactive :
 
 Upload des fichiers Excel
@@ -84,7 +87,11 @@ Génération instantanée
 Téléchargement Excel / PDF / Log
 
 Lancer :
+
+```bash
 streamlit run app.py
+```
+
 Idéal pour :
 
 Utilisateur non technique
@@ -93,40 +100,71 @@ Traitement ponctuel
 
 Analyse exploratoire
 
-Consulter le dossier assets/ pour un aperçu de l’interface.
+Regarder les images dans le dossier assets pour un aperçu de l'interface.
 
-🧪 Données de démonstration
+---
+
+# 🧪 Données de démonstration
+
 Pour tester le projet :
 
+```bash
 python generate_demo_data.py
+```
+
 Cela crée automatiquement plusieurs fichiers Excel simulés dans :
 
 data/
-🏗 Architecture du projet
+
+---
+
+# 🏗 Architecture du projet
+
 project/
 │
-├── app.py
-├── main.py
-├── utils.py
-├── generate_demo_data.py
+├── app.py                  # Interface Streamlit
+├── main.py                 # Mode batch
+├── utils.py                # Fonctions métier (lecture, nettoyage, reporting)
+├── generate_demo_data.py   # Génération de données de démo
 ├── requirements.txt
 ├── README.md
 │
-├── data/      # non versionné
-├── output/    # non versionné
-└── venv/      # non versionné
-⚙ Installation
+├── data/                   # Fichiers source (non versionnés)
+├── output/                 # Résultats générés (non versionnés)
+└── venv/                   # Environnement virtuel (non versionné)
+
+---
+
+# ⚙ Installation
+
 1️⃣ Créer un environnement virtuel
+
+```bash
 python -m venv venv
+```
+
 Activation (Windows) :
 
+```bash
 venv\Scripts\activate
+```
+
 Si PowerShell bloque :
 
+```bash
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
 2️⃣ Installer les dépendances
+
+```bash
 pip install -r requirements.txt
-🧾 Traçabilité & Audit
+```
+
+---
+
+# 🧾 Traçabilité & Audit
+
 Chaque exécution enregistre :
 
 Horodatage précis
@@ -143,7 +181,10 @@ Résumé financier
 
 Objectif : pouvoir justifier un résultat à tout moment.
 
-🔐 Sécurité & Bonnes pratiques
+---
+
+# 🔐 Sécurité & Bonnes pratiques
+
 Aucun code client n’est exécuté
 
 Validation des types et conversions sécurisées
@@ -154,7 +195,10 @@ Données non versionnées
 
 Logs exploitables en cas de contrôle
 
-💼 Cas d’usage
+---
+
+# 💼 Cas d’usage
+
 Consolidation mensuelle des ventes
 
 Reporting commercial multi-fichiers
@@ -165,7 +209,10 @@ Vérification cohérence exports CRM
 
 Analyse interne direction
 
-📈 Valeur ajoutée
+---
+
+# 📈 Valeur ajoutée
+
 Gain estimé :
 
 1 à 3 heures économisées par mois
@@ -176,7 +223,10 @@ Meilleure traçabilité
 
 Standardisation du reporting
 
-🧠 Technologies
+---
+
+# 🧠 Technologies
+
 Python 3.10+
 
 Pandas
@@ -189,8 +239,11 @@ Streamlit
 
 Git
 
-👨‍💻 Auteur
-Vivien Gauzelin
-Ingénieur – Automatisation de données pour PME
+---
 
-Projet de démonstration dans le cadre d’une activité freelance spécialisée en automatisation de processus et reporting.
+# 👨‍💻 Auteur
+
+Vivien Gauzelin  
+Ingénieur – Automatisation de données pour PME  
+
+Projet démonstration dans le cadre d’une activité freelance spécialisée en automatisation de processus et reporting.
