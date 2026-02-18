@@ -1,16 +1,16 @@
 # 📊 Reporting Automatisé PME
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![Streamlit](https://img.shields.io/badge/Interface-Streamlit-red)
-![Statut](https://img.shields.io/badge/Statut-Demo%20Professionnelle-success)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-red)
+![Status](https://img.shields.io/badge/Status-Demo-success)
 
 Outil automatisé de consolidation et reporting Excel pour PME.
 
-Objectif : transformer des exports Excel bruts en reporting exploitable, propre et traçable, en quelques secondes.
+**Objectif :** transformer des exports Excel bruts en reporting exploitable, propre et traçable, en quelques secondes.
 
 ---
 
-# 🎯 Problématique PME
+## 🎯 Problématique PME
 
 De nombreuses PME :
 
@@ -20,47 +20,45 @@ De nombreuses PME :
 - Manquent de traçabilité en cas d’erreur
 - N’ont pas d’outil simple pour produire un reporting clair
 
-Cette solution automatise l’ensemble du processus.
+➡️ Cette solution automatise l’ensemble du processus.
 
 ---
 
-# ✅ Fonctionnalités
+## ✅ Fonctionnalités
 
-✔ Consolidation automatique de multiples fichiers Excel  
-✔ Nettoyage et normalisation des données  
-✔ Détection d’erreurs (dates invalides, montants incorrects)  
-✔ Reporting mensuel  
-✔ Reporting par commercial  
-✔ Export Excel multi-feuilles  
-✔ Génération PDF  
-✔ Log d’exécution détaillé (audit & traçabilité)  
-✔ Empreinte SHA256 des fichiers source  
+- ✔ Consolidation automatique de multiples fichiers Excel  
+- ✔ Nettoyage et normalisation des données  
+- ✔ Détection d’erreurs (dates invalides, montants incorrects)  
+- ✔ Reporting mensuel  
+- ✔ Reporting par commercial  
+- ✔ Export Excel multi-feuilles  
+- ✔ Génération PDF  
+- ✔ Log d’exécution détaillé (audit & traçabilité)  
+- ✔ Empreinte SHA256 des fichiers source  
 
 ---
 
-# 🚀 Modes de fonctionnement
+## 🚀 Modes de fonctionnement
 
-## 1️⃣ Mode Batch (automatisation locale)
+### 1️⃣ Mode Batch (automatisation locale)
 
 Lecture automatique des fichiers déposés dans (dossier à créer) :
 
+```text
 data/
-
-
 Génération des résultats dans :
 
-output/<ANNEE>/
-
-
+output/
 Fichiers produits :
 
-- reporting_YYYY-MM_to_YYYY-MM.xlsx
-- rapport_YYYY-MM_to_YYYY-MM.pdf
-- log_YYYY-MM-DD.txt
+reporting_YYYY-MM_to_YYYY-MM.xlsx
 
-### Lancer :
+rapport_YYYY-MM_to_YYYY-MM.pdf
 
-```bash
+log_YYYY-MM-DD.txt
+
+Lancer :
+
 python main.py
 Idéal pour :
 
@@ -84,6 +82,7 @@ Génération instantanée
 Téléchargement Excel / PDF / Log
 
 Lancer :
+
 streamlit run app.py
 Idéal pour :
 
@@ -93,8 +92,7 @@ Traitement ponctuel
 
 Analyse exploratoire
 
-Regarder les images dans le dossier assets pour un aperçu de l'interface.
-
+📷 Regarde les images dans le dossier assets/ pour un aperçu de l’interface.
 
 🧪 Données de démonstration
 Pour tester le projet :
@@ -142,7 +140,7 @@ Nombre de lignes supprimées
 
 Résumé financier
 
-Objectif : pouvoir justifier un résultat à tout moment.
+🎯 Objectif : pouvoir justifier un résultat à tout moment.
 
 🔐 Sécurité & Bonnes pratiques
 Aucun code client n’est exécuté
