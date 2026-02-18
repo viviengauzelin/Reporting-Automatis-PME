@@ -1,158 +1,214 @@
-📊 Reporting Automatisé PME
-Outil automatisé de consolidation et reporting Excel pour PME
-🎯 Objectif
+# 📊 Reporting Automatisé PME
 
-Cette solution permet de :
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Streamlit](https://img.shields.io/badge/Interface-Streamlit-red)
+![Statut](https://img.shields.io/badge/Statut-Demo%20Professionnelle-success)
 
-Consolider automatiquement plusieurs fichiers Excel (.xlsx)
+Solution d’automatisation de consolidation et de reporting Excel destinée aux PME.
 
-Nettoyer et normaliser les données
+Objectif : transformer des exports Excel bruts en reporting exploitable, propre et traçable, en quelques secondes.
 
-Générer un reporting mensuel consolidé
+---
 
-Produire un rapport PDF synthétique
+# 🎯 Problématique PME
 
-Assurer une traçabilité complète (journal + empreinte des fichiers)
+De nombreuses PME :
 
-🔹 MODE 1 — Traitement Automatique (Batch)
+- Consolident manuellement plusieurs exports Excel
+- Refont les mêmes manipulations chaque mois
+- Perdent du temps sur le nettoyage des données
+- Manquent de traçabilité en cas d’erreur
+- N’ont pas d’outil simple pour produire un reporting clair
 
-Idéal pour un usage simple et rapide.
+Cette solution automatise l’ensemble du processus.
 
-📂 Déposer les fichiers
+---
 
-Déposez vos exports Excel (.xlsx) dans un dossier à créer :
+# ✅ Fonctionnalités
+
+✔ Consolidation automatique de multiples fichiers Excel  
+✔ Nettoyage et normalisation des données  
+✔ Détection d’erreurs (dates invalides, montants incorrects)  
+✔ Reporting mensuel  
+✔ Reporting par commercial  
+✔ Export Excel multi-feuilles  
+✔ Génération PDF  
+✔ Log d’exécution détaillé (audit & traçabilité)  
+✔ Empreinte SHA256 des fichiers source  
+
+---
+
+# 🚀 Modes de fonctionnement
+
+## 1️⃣ Mode Batch (automatisation locale)
+
+Lecture automatique des fichiers déposés dans (dossier à créer) :
 
 data/
 
-▶️ Lancer le traitement
 
-Ouvrir un terminal dans le dossier du projet puis exécuter :
-
-py main.py
-
-📁 Résultats générés
-
-Les fichiers sont créés dans :
+Génération des résultats dans :
 
 output/<ANNEE>/
 
 
-Vous y trouverez :
+Fichiers produits :
 
-reporting_YYYY-MM.xlsx → Excel consolidé multi-feuilles
+- reporting_YYYY-MM_to_YYYY-MM.xlsx
+- rapport_YYYY-MM_to_YYYY-MM.pdf
+- log_YYYY-MM-DD.txt
 
-rapport_YYYY-MM.pdf → Rapport synthétique PDF
+### Lancer :
 
-log_YYYY-MM-DD.txt → Journal détaillé d’exécution
+```bash
+python main.py
+Idéal pour :
 
-🔹 MODE 2 — Interface Graphique (Streamlit)
+Exécution planifiée
 
-Permet :
+Traitement mensuel
 
-Import direct des fichiers
+Intégration dans un flux interne
 
-Mapping des colonnes (date, montant, commercial)
+2️⃣ Interface Web (Streamlit)
+Interface utilisateur interactive :
 
-Visualisation des données
+Upload des fichiers Excel
 
-Téléchargement immédiat des exports
+Mapping des colonnes
 
-▶️ Lancer l’interface
+Contrôle qualité en temps réel
 
-Dans le dossier du projet :
+Génération instantanée
 
-streamlit run app.py
-
-
-Un navigateur s’ouvre automatiquement.
-
-📤 Étapes
-
-Importer les fichiers Excel
-
-Sélectionner les colonnes nécessaires
-
-Générer le reporting
-
-Télécharger :
-
-Excel consolidé
-
-Rapport PDF
-
-Log d’exécution
-
-
-🧪 Mode Démonstration (données test)
-
-Pour tester la solution sans utiliser vos données :
+Téléchargement Excel / PDF / Log
 
 Lancer :
+streamlit run app.py
+Idéal pour :
 
-py generate_demo_data.py
+Utilisateur non technique
+
+Traitement ponctuel
+
+Analyse exploratoire
 
 
-Cela génère automatiquement plusieurs fichiers Excel de démonstration dans un dossier :
+🖥 Aperçu Interface
+
+Upload
+
+![Upload Interface](assets/streamlit_automatisation_demo_1.png)
+
+Mapping
+
+![Resume Interface](assets/streamlit_automatisation_demo_3.png)
+
+Résumé & Reporting
+
+![Upload Interface](assets/streamlit_automatisation_demo_3.png)
+
+Download
+
+![Upload Interface](assets/streamlit_automatisation_demo_4.png)
+
+
+🧪 Données de démonstration
+Pour tester le projet :
+
+python generate_demo_data.py
+Cela crée automatiquement plusieurs fichiers Excel simulés dans :
 
 data/
+🏗 Architecture du projet
+project/
+│
+├── app.py                  # Interface Streamlit
+├── main.py                 # Mode batch
+├── utils.py                # Fonctions métier (lecture, nettoyage, reporting)
+├── generate_demo_data.py   # Génération de données de démo
+├── requirements.txt
+├── README.md
+│
+├── data/                   # Fichiers source (non versionnés)
+├── output/                 # Résultats générés (non versionnés)
+└── venv/                   # Environnement virtuel (non versionné)
+⚙ Installation
+1️⃣ Créer un environnement virtuel
+python -m venv venv
+Activation (Windows) :
 
+venv\Scripts\activate
+Si PowerShell bloque :
 
-Vous pouvez ensuite :
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+2️⃣ Installer les dépendances
+pip install -r requirements.txt
+🧾 Traçabilité & Audit
+Chaque exécution enregistre :
 
-Lancer le traitement batch (py main.py)
+Horodatage précis
 
-Ou tester l’interface (streamlit run app.py)
+Liste des fichiers traités
 
+Hash SHA256 des fichiers
 
-🔎 Contrôle Qualité & Traçabilité
-
-Chaque exécution inclut :
-
-Liste des fichiers utilisés
-
-Empreinte SHA256 de chaque fichier
-
-Nombre de lignes traitées
+Statistiques de qualité des données
 
 Nombre de lignes supprimées
 
-Période analysée
+Résumé financier
 
-Journal d’exécution détaillé
+Objectif : pouvoir justifier un résultat à tout moment.
 
-Permet :
+🔐 Sécurité & Bonnes pratiques
+Aucun code client n’est exécuté
 
-✔ Audit
-✔ Vérification interne
-✔ Résolution rapide en cas d’anomalie
+Validation des types et conversions sécurisées
 
-⚠️ En cas de problème
+Gestion robuste des erreurs
 
-Transmettre le fichier :
+Données non versionnées
 
-output/log_YYYY-MM-DD.txt
+Logs exploitables en cas de contrôle
 
+💼 Cas d’usage
+Consolidation mensuelle des ventes
 
-(ou le log téléchargeable via l’interface)
+Reporting commercial multi-fichiers
 
-🛠️ Installation (si nécessaire)
+Préparation reporting expert-comptable
 
-Créer un environnement virtuel :
+Vérification cohérence exports CRM
 
-python -m venv venv
-venv\Scripts\activate
+Analyse interne direction
 
+📈 Valeur ajoutée
+Gain estimé :
 
-Installer les dépendances :
+1 à 3 heures économisées par mois
 
-pip install -r requirements.txt
+Réduction du risque d’erreur humaine
 
-🔒 Sécurité
+Meilleure traçabilité
 
-Traitement local uniquement
+Standardisation du reporting
 
-Aucun accès réseau requis
+🧠 Technologies
+Python 3.10+
 
-Aucune exécution de code externe
+Pandas
 
-Fichiers sources non modifiés
+OpenPyXL
+
+ReportLab
+
+Streamlit
+
+Git
+
+👨‍💻 Auteur
+Vivien Gauzelin
+Ingénieur – Automatisation & Reporting PME
+
+Projet démonstration dans le cadre d’une activité freelance spécialisée en automatisation de processus et reporting.
