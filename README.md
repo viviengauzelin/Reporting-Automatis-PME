@@ -94,23 +94,40 @@ Traitement ponctuel
 Analyse exploratoire
 
 
-🖥 Aperçu Interface
+---
 
-Upload
+# 🖥 Aperçu de l’interface
 
-![Upload Interface](assets/streamlit_automatisation_demo_1.png)
+## 1️⃣ Upload des fichiers Excel
 
-Mapping
+<img src="assets/streamlit_automatisation_demo_1.png" width="900">
 
-![Resume Interface](assets/streamlit_automatisation_demo_3.png)
+Interface permettant l’import de plusieurs fichiers `.xlsx` simultanément, avec détection automatique des doublons.
 
-Résumé & Reporting
 
-![Upload Interface](assets/streamlit_automatisation_demo_3.png)
+## 2️⃣ Mapping des colonnes
 
-Download
+<img src="assets/streamlit_automatisation_demo_2.png" width="900">
 
-![Upload Interface](assets/streamlit_automatisation_demo_4.png)
+Sélection guidée des colonnes nécessaires (Date, Montant, Commercial) avec validation des incohérences.
+
+
+## 3️⃣ Résumé & Reporting
+
+<img src="assets/streamlit_automatisation_demo_3.png" width="900">
+
+Affichage des indicateurs clés
+
+
+## 4️⃣ Téléchargement des résultats
+
+<img src="assets/streamlit_automatisation_demo_4.png" width="900">
+
+Export immédiat :
+
+- Excel multi-feuilles formaté  
+- Rapport PDF  
+- Log d’exécution complet (audit & traçabilité)  
 
 
 🧪 Données de démonstration
