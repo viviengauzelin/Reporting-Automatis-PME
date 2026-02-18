@@ -100,7 +100,8 @@ Analyse exploratoire
 
 1️⃣ Upload des fichiers Excel
 
-![Upload](https://github.com/viviengauzelin/Reporting-Automatis-PME/blob/main/assets/streamlit_automatisation_demo_1.png?raw=true)
+![Upload](assets/streamlit_automatisation_demo_1.png)
+
 
 Interface permettant l’import de plusieurs fichiers `.xlsx` simultanément, avec détection automatique des doublons.
 
