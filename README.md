@@ -100,7 +100,7 @@ Analyse exploratoire
 
 1️⃣ Upload des fichiers Excel
 
-<img src="assets/streamlit_automatisation_demo_1.PNG" width="900">
+<img src="assets/streamlit_automatisation_demo_1" width="900">
 
 Interface permettant l’import de plusieurs fichiers `.xlsx` simultanément, avec détection automatique des doublons.
 
