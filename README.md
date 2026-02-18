@@ -48,7 +48,7 @@ data/
 
 Génération des résultats dans :
 
-output/<ANNEE>/
+output/&lt;ANNEE&gt;/
 
 Fichiers produits :
 
@@ -120,20 +120,20 @@ data/
 
 # 🏗 Architecture du projet
 
+```
 project/
 │
-├── app.py                  # Interface Streamlit
-├── main.py                 # Mode batch
-├── utils.py                # Fonctions métier (lecture, nettoyage, reporting)
-├── generate_demo_data.py   # Génération de données de démo
+├── app.py
+├── main.py
+├── utils.py
+├── generate_demo_data.py
 ├── requirements.txt
 ├── README.md
 │
-├── data/                   # Fichiers source (non versionnés)
-├── output/                 # Résultats générés (non versionnés)
-└── venv/                   # Environnement virtuel (non versionné)
-
----
+├── data/      # Fichiers source (non versionnés)
+├── output/    # Résultats générés (non versionnés)
+└── venv/      # Environnement virtuel (non versionné)
+```
 
 # ⚙ Installation
 
