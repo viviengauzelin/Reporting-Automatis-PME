@@ -93,7 +93,7 @@ Traitement ponctuel
 
 Analyse exploratoire
 
-Regarder les imaes dans le dossier assets pour un aperçu de l'interface
+Regarder les images dans le dossier assets pour un aperçu de l'interface.
 
 
 🧪 Données de démonstration
