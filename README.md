@@ -44,17 +44,11 @@ Cette solution automatise l’ensemble du processus.
 
 Lecture automatique des fichiers déposés dans :
 
-
-
 data/
-
 
 Génération des résultats dans :
 
-
-
 output/<ANNEE>/
-
 
 Fichiers produits :
 
@@ -64,9 +58,7 @@ Fichiers produits :
 
 #### Lancer :
 
-```bash
 python main.py
-
 
 Idéal pour :
 
@@ -91,8 +83,8 @@ Génération instantanée
 Téléchargement Excel / PDF / Log
 
 Lancer :
-streamlit run app.py
 
+streamlit run app.py
 
 Idéal pour :
 
@@ -110,12 +102,12 @@ Pour tester le projet :
 
 python generate_demo_data.py
 
-
 Cela crée automatiquement plusieurs fichiers Excel simulés dans :
 
 data/
 
 🏗 Architecture du projet
+
 project/
 │
 ├── app.py
@@ -131,19 +123,19 @@ project/
 
 ⚙ Installation
 1️⃣ Créer un environnement virtuel
-python -m venv venv
 
+python -m venv venv
 
 Activation (Windows) :
 
 venv\Scripts\activate
-
 
 Si PowerShell bloque :
 
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 2️⃣ Installer les dépendances
+
 pip install -r requirements.txt
 
 🧾 Traçabilité & Audit
