@@ -206,6 +206,48 @@ pip install -r requirements.txt
 
 ---
 
+## ⚙️ Installation & Lancement simplifiés (.bat)
+
+Pour une utilisation simple côté PME, l’outil peut être installé et lancé sans utiliser le terminal.
+
+### 🔹 Installation (une seule fois)
+
+1. Installer Python 3.10+ (cocher "Add Python to PATH") sur un ordinateur windows, avoir les droits d'installation sur l'ordinateur.
+2. Double-cliquer sur `INSTALLER.bat`.
+
+Ce script :
+- Crée un environnement virtuel (venv)
+- Installe automatiquement les dépendances
+- Prépare l’environnement d’exécution
+
+---
+
+### 🔹 Lancement – Mode Interface (recommandé)
+
+Double-cliquer sur :
+
+`RUN_STREAMLIT.bat`
+
+Cela :
+- Active l’environnement virtuel
+- Lance l’application Streamlit
+- Ouvre automatiquement le navigateur en local (localhost)
+
+---
+
+### 🔹 Lancement – Mode Batch (automatique)
+
+1. Déposer les fichiers Excel dans le dossier `data/`
+2. Double-cliquer sur `RUN_BATCH.bat`
+
+Le script :
+- Traite automatiquement tous les fichiers `.xlsx`
+- Génère les reportings dans `output/`
+- Produit un fichier log horodaté
+
+⚠ En environnement planifié (Planificateur de tâches Windows), le fichier `RUN_BATCH.bat` peut être exécuté automatiquement à une fréquence définie en modifiant légèrement le fichier comme décrit dedans (mensuelle, hebdomadaire, etc.).
+
+
 # 🧾 Traçabilité & Audit
 
 Chaque exécution enregistre :
