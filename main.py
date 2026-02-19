@@ -1,5 +1,6 @@
 from pathlib import Path
 import logging
+import sys
 
 import utils
 
@@ -7,16 +8,19 @@ import utils
 def main():
     # 1) logging
     log_path = utils.setup_logging(base_dir="output")
-    # Configure le système de logs (fichier + console), crée le dossier si besoin,
-    # et retourne le chemin du fichier log du jour
     logging.info("=== DÉMARRAGE BATCH REPORTING ===")
     logging.info(f"Log: {log_path}")
 
     # 2) chemins
     data_dir = Path("data")
 
-    # 3) chargement robuste
-    df = utils.charger_fichiers_robuste(str(data_dir))
+    # 3) chargement robuste (gérer data vide / tout KO)
+    try:
+        df = utils.charger_fichiers_robuste(str(data_dir))
+    except ValueError as e:
+        logging.warning(f"{e} -> Fin sans traitement.")
+        logging.info("=== FIN (AUCUN FICHIER) ===")
+        sys.exit(0)  # pas d'échec: juste rien à traiter
 
     # 4) nettoyage + enrichissement
     df = utils.nettoyer(df)
