@@ -64,7 +64,7 @@ python main.py
 
 Idéal pour :
 
-Exécution planifiée
+Exécution planifiée via le planificateur de tâches
 
 Traitement mensuel
 
