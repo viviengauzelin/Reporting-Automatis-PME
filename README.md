@@ -38,7 +38,7 @@ Cette solution automatise l’ensemble du processus.
 
 ---
 
-# Prérequis d'installation
+# 📦 Prérequis d'installation
 
 - Ordinateur Windows (code adaptable à MacOS et Linux avec quelques changements)
 - Python 3.10+ installé
