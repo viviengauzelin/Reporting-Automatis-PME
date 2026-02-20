@@ -38,6 +38,16 @@ Cette solution automatise l’ensemble du processus.
 
 ---
 
+# Prérequis d'installation
+
+- Ordinateur Windows (code adaptable à MacOS et Linux avec quelques changements)
+- Python 3.10+ installé
+- Option “Add Python to PATH” cochée
+- Droits d’installation initiaux (ou intervention IT)
+- Connexion Internet uniquement lors de la première installation
+
+---
+
 # 🚀 Modes de fonctionnement
 
 ## 1️⃣ Mode Batch (automatisation locale)
@@ -211,9 +221,8 @@ pip install -r requirements.txt
 Pour une utilisation simple côté PME, l’outil peut être installé et lancé sans utiliser le terminal.
 
 ### 🔹 Installation (une seule fois)
-
-1. Installer Python 3.10+ (cocher "Add Python to PATH") sur un ordinateur windows (code adaptable à MacOS et Linux avec quelques changements), avoir les droits d'installation sur l'ordinateur.
-2. Double-cliquer sur `INSTALLER.bat`.
+.
+Double-cliquer sur `INSTALLER.bat`.
 
 Ce script :
 - Crée un environnement virtuel (venv)
