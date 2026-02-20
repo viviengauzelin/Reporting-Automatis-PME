@@ -421,14 +421,13 @@ st.write(f"- Montants vides (source) : **{q['montants_vides_source']}**")
 st.write(f"- Montants invalides (hors vides) : **{q['montants_invalides_hors_vides']}**")
 
 st.subheader("Aperçu (après nettoyage)")
-st.dataframe(st.session_state.df.head(30), use_container_width=True)
-
+st.dataframe(st.session_state.df.head(30), width="stretch")
 st.subheader("Total par mois")
-st.dataframe(st.session_state.report_mois, use_container_width=True)
+st.dataframe(st.session_state.report_mois, width="stretch")
 
 if s["has_commercial"]:
     st.subheader("Total par commercial")
-    st.dataframe(st.session_state.report_commercial, use_container_width=True)
+    st.dataframe(st.session_state.report_commercial, width="stretch")
 
 st.download_button(
     "⬇️ Télécharger l'Excel multi-feuilles (formaté)",
