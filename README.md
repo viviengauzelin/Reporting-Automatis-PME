@@ -212,7 +212,7 @@ Pour une utilisation simple côté PME, l’outil peut être installé et lancé
 
 ### 🔹 Installation (une seule fois)
 
-1. Installer Python 3.10+ (cocher "Add Python to PATH") sur un ordinateur windows, avoir les droits d'installation sur l'ordinateur.
+1. Installer Python 3.10+ (cocher "Add Python to PATH") sur un ordinateur windows (code adaptable à MacOS et Linux avec quelques changements), avoir les droits d'installation sur l'ordinateur.
 2. Double-cliquer sur `INSTALLER.bat`.
 
 Ce script :
