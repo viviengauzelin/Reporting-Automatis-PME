@@ -221,7 +221,7 @@ pip install -r requirements.txt
 
 Pour une utilisation simple côté PME, l’outil peut être installé et lancé sans utiliser le terminal.
 
-### 🔹 Installation (une seule fois)
+### 🔹 1. Installation (une seule fois)
 .
 Double-cliquer sur `INSTALLER.bat`.
 
@@ -232,23 +232,30 @@ Ce script :
 
 ---
 
-### 🔹 Lancement – Mode Interface (recommandé)
+### 🔹 2. Création des fichiers excel de démo
+.
+Double-cliquer sur `CREER_FICHIERS_DEMO.bat`.
+
+Ce script :
+- Crée le dossier de data avec les fichiers excel de démo à l'intérieur
+
+---
+
+### 🔹 3a. Lancement – Mode Interface (recommandé)
 
 Double-cliquer sur :
 
 `RUN_STREAMLIT.bat`
 
 Cela :
-- Active l’environnement virtuel
 - Lance l’application Streamlit
 - Ouvre automatiquement le navigateur en local (localhost)
 
 ---
 
-### 🔹 Lancement – Mode Batch (automatique)
+### 🔹 3b. Lancement – Mode Batch (automatique)
 
-1. Déposer les fichiers Excel dans le dossier `data/`
-2. Double-cliquer sur `RUN_BATCH.bat`
+Double-cliquer sur `RUN_BATCH.bat`
 
 Le script :
 - Traite automatiquement tous les fichiers `.xlsx`
