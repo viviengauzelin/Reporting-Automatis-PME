@@ -50,6 +50,20 @@ Cette solution automatise l’ensemble du processus.
 
 ---
 
+# 🧪 Données de démonstration
+
+Pour tester le projet :
+
+```bash
+python generate_demo_data.py
+```
+
+Cela crée automatiquement plusieurs fichiers Excel simulés dans :
+
+data/
+
+---
+
 # 🚀 Modes de fonctionnement
 
 ## 1️⃣ Mode Batch (automatisation locale)
@@ -155,21 +169,6 @@ Export immédiat :
 - Excel multi-feuilles formaté  
 - Rapport PDF  
 - Log d’exécution complet (audit & traçabilité)  
-
----
-
-
-# 🧪 Données de démonstration
-
-Pour tester le projet :
-
-```bash
-python generate_demo_data.py
-```
-
-Cela crée automatiquement plusieurs fichiers Excel simulés dans :
-
-data/
 
 ---
 
