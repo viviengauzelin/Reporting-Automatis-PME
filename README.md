@@ -36,6 +36,8 @@ Cette solution automatise l’ensemble du processus.
 ✔ Log d’exécution détaillé (audit & traçabilité)  
 ✔ Empreinte SHA256 des fichiers source  
 
+⚠️ Remarque : Cette démo est conçue pour fonctionner avec des fichiers Excel respectant le format généré par le programme de génération de fichiers de démonstration introduit plus bas. Les fichiers doivent avoir les colonnes attendues (date, montant, commercial, etc.) et un format compatible .xlsx.
+
 ---
 
 # 📦 Prérequis d'installation
