@@ -149,7 +149,7 @@ Sélection guidée des colonnes nécessaires (Date, Montant, Commercial) avec va
 ## 3️⃣ Résumé & Reporting
 
 <img src="assets/streamlit_automatisation_demo_3.png" width="900">
-
+---
 <img src="assets/streamlit_automatisation_demo_4.png" width="900">
 
 Affichage des indicateurs clés :
@@ -348,6 +348,6 @@ Git
 # 👨‍💻 Auteur
 
 Vivien Gauzelin  
-Ingénieur – Automatisation de données pour PME  
+Ingénieur – Automatisation et structuration de données pour PME  
 
 Projet démonstration dans le cadre d’une activité freelance spécialisée en automatisation de processus et reporting.
