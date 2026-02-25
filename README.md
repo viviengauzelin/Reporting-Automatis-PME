@@ -150,6 +150,8 @@ Sélection guidée des colonnes nécessaires (Date, Montant, Commercial) avec va
 
 <img src="assets/streamlit_automatisation_demo_3.png" width="900">
 
+<img src="assets/streamlit_automatisation_demo_4.png" width="900">
+
 Affichage des indicateurs clés :
 
 - Nombre de fichiers traités  
@@ -162,7 +164,7 @@ Affichage des indicateurs clés :
 
 ## 4️⃣ Téléchargement des résultats
 
-<img src="assets/streamlit_automatisation_demo_4.png" width="900">
+<img src="assets/streamlit_automatisation_demo_5.png" width="900">
 
 Export immédiat :
 
