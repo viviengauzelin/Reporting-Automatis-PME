@@ -309,7 +309,7 @@ Reporting commercial multi-fichiers
 
 Préparation reporting expert-comptable
 
-Vérification cohérence exports CRM
+Contrôle et fiabilisation des exports CRM
 
 Analyse interne direction
 
