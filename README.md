@@ -348,6 +348,6 @@ Git
 # 👨‍💻 Auteur
 
 Vivien Gauzelin  
-Ingénieur – Automatisation et structuration de données pour PME  
+Data Analyst | Automatisation & fiabilisation de données  
 
 Projet démonstration dans le cadre d’une activité freelance spécialisée en automatisation de processus et reporting.
