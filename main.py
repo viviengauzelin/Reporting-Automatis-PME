@@ -1,56 +1,120 @@
-from pathlib import Path
+"""
+main.py - Point d'entrée pour l'exécution en mode Batch (automatisé).
+
+Usage direct :
+    python main.py
+
+Usage planifié (Windows - Planificateur de tâches) :
+    Lancer RUN_BATCH.bat selon la fréquence souhaitée.
+
+Ce script est intentionnellement minimal : il orchestre les appels à utils.py
+sans contenir de logique métier. Toute la logique est dans utils.py.
+Les chemins et constantes proviennent de config.SETTINGS (surchargeable via .env).
+"""
+
+from __future__ import annotations
+
 import logging
 import sys
+from pathlib import Path
 
 import utils
+from config import SETTINGS
 
 
-def main():
-    # 1) logging
-    log_path = utils.setup_logging(base_dir="output")
-    logging.info("=== DÉMARRAGE BATCH REPORTING ===")
-    logging.info(f"Log: {log_path}")
+def main() -> None:
+    """Exécute le pipeline complet de reporting en mode Batch.
 
-    # 2) chemins
-    data_dir = Path("data")
+    Pipeline :
+        1. Initialisation du logging (fichier horodaté dans output/).
+        2. Chargement robuste des fichiers .xlsx (data/).
+        3. Nettoyage et enrichissement (colonne mois).
+        4. Checkpoint de réconciliation des données (audit).
+        5. Calcul des reportings (par mois, par commercial).
+        6. Export Excel multi-feuilles + formatage openpyxl.
+        7. Export PDF.
 
-    # 3) chargement robuste (gérer data vide / tout KO)
+    En cas d'alerte d'intégrité (écart des données anormal), le script
+    loggue une erreur critique et quitte avec le code 2 pour permettre
+    une détection par un orchestrateur ou le Planificateur de tâches.
+
+    Returns:
+        None. Effets de bord : écriture de fichiers dans output/<annee>/.
+
+    Raises:
+        SystemExit(0): Si aucun fichier n'est trouvé (pas une erreur).
+        SystemExit(2): Si le checkpoint de réconciliation échoue.
+    """
+    # 1. Logging
+    # Utilise SETTINGS.output_dir (configurable via .env) plutôt qu'un chemin hardcodé.
+    log_path = utils.setup_logging(base_dir=str(SETTINGS.output_dir))
+    logging.info(f"=== DÉMARRAGE - {SETTINGS.app_name} v{SETTINGS.app_version} ===")
+    logging.info(f"Log : {log_path}")
+    logging.info(f"Répertoire source : {SETTINGS.data_dir}")
+    logging.info(f"Répertoire sortie : {SETTINGS.output_dir}")
+
+    # 2. Chargement robuste
+    # ValueError si aucun fichier lisible → sortie propre (code 0, pas une erreur fatale).
     try:
-        df = utils.charger_fichiers_robuste(str(data_dir))
+        df_source = utils.load_excel_files(str(SETTINGS.data_dir))
     except ValueError as e:
-        logging.warning(f"{e} -> Fin sans traitement.")
+        logging.warning(f"{e} → Fin sans traitement.")
         logging.info("=== FIN (AUCUN FICHIER) ===")
-        sys.exit(0)  # pas d'échec: juste rien à traiter
+        sys.exit(0)
 
-    # 4) nettoyage + enrichissement
-    df = utils.nettoyer(df)
-    df = utils.ajouter_mois(df)
+    source_row_count = len(df_source)
+    logging.info(f"Lignes chargées (avant nettoyage) : {source_row_count}")
 
-    # 5) reportings
-    report_mois = utils.total_par_mois(df)
-    report_commercial = utils.total_par_commercial(df)
+    # 3. Nettoyage + enrichissement
+    df = utils.clean_data(df_source)
+    df = utils.add_month_column(df)
 
-    # 6) période analysée (basée sur les données)
-    min_mois = df["mois"].min()
-    max_mois = df["mois"].max()
-    year = str(min_mois).split("-")[0]
+    # 4. Checkpoint de réconciliation des données
+    # Compare la somme source (lignes à date valide) avec la somme traitée
+    # pour prouver l'absence de perte ou d'altération silencieuse de données.
+    recon_report = utils.reconcile_data(df_source, df)
+    # Le message est déjà loggué en interne par reconcile_data() - pas de doublon ici.
 
-    # 7) dossier de sortie cohérent avec l'année des données
-    out_base = Path("output") / year
-    out_base.mkdir(parents=True, exist_ok=True)
+    if not recon_report.integrity_ok:
+        logging.critical(
+            f"ALERTE INTÉGRITÉ - Écart de {recon_report.absolute_gap:.4f} € "
+            f"({recon_report.gap_pct * 100:.2f} %) détecté. "
+            "Le reporting NE DOIT PAS être diffusé avant investigation. "
+            f"Somme attendue : {recon_report.expected_source_sum:.2f} € | "
+            f"Somme traitée : {recon_report.processed_sum:.2f} €"
+        )
+        logging.info("=== FIN (ÉCHEC INTÉGRITÉ) ===")
+        sys.exit(2)  # code 2 : détectable par un planificateur ou script de supervision
 
-    # 8) export Excel + formatage (nom basé sur période)
-    if min_mois == max_mois:
-        excel_name = f"reporting_{min_mois}.xlsx"
-    else:
-        excel_name = f"reporting_{min_mois}_to_{max_mois}.xlsx"
+    # 5. Reportings
+    report_months = utils.aggregate_by_month(df)
+    report_salespeople = utils.aggregate_by_salesperson(df)
 
-    excel_path = out_base / excel_name
-    utils.exporter_excel(df, report_mois, report_commercial, excel_path)
-    utils.formater_excel(excel_path)
+    total_amount = float(df["montant"].sum())
+    logging.info(f"Chiffre d'affaires total : {total_amount:,.2f} €")
+    logging.info(f"Période : {df['mois'].min()} → {df['mois'].max()}")
 
-    # 9) export PDF
-    utils.exporter_pdf(report_mois, report_commercial, out_base)
+    # 6. Export Excel
+    # Nom du fichier basé sur la période couverte par les données (reproductible).
+    min_month = df["mois"].min()
+    max_month = df["mois"].max()
+    year = str(min_month).split("-")[0]
+    excel_name = (
+        f"reporting_{min_month}.xlsx"
+        if min_month == max_month
+        else f"reporting_{min_month}_to_{max_month}.xlsx"
+    )
+
+    # Sous-dossier par année pour éviter l'accumulation à la racine de output/
+    out_dir = SETTINGS.output_dir / year
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    excel_path = out_dir / excel_name
+    utils.export_excel(df, report_months, report_salespeople, excel_path)
+    utils.format_excel_file(excel_path)
+
+    # 7. Export PDF
+    utils.export_pdf(report_months, report_salespeople, out_dir)
 
     logging.info("=== FIN OK ===")
 

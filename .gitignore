@@ -1,4 +1,21 @@
-Data/
+# --- Données & résultats (non versionnés) ---
+data/
 output/
+
+# --- Environnement virtuel ---
 venv/
+
+# --- Variables d'environnement (NE JAMAIS VERSIONNER) ---
+# Le .env peut contenir des mots de passe, clés API et chemins privés.
+# Le .env.template (modèle sans valeurs sensibles) est lui versionné.
+.env
+!.env.template
+
+# --- Python ---
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
