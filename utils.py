@@ -6,10 +6,11 @@ Ce module implémente la logique métier pure, indépendante de toute interface
 
 - **Auditable** : chaque transformation est tracée ; une fonction de réconciliation
   prouve mathématiquement que 100 % des données sources sont comptabilisées.
-- **Robuste** : gestion explicite des erreurs, types incohérents, fichiers corrompus.
+- **Robuste** : gestion explicite des erreurs, types incohérents, fichiers corrompus,
+  encodages CSV variés (utf-8, latin-1, cp1252, utf-8-sig).
 - **Testable** : aucune dépendance à Streamlit ou au système de fichiers dans le
   cœur métier (injection de dépendances).
-- **Scalable** : voir note de scalabilité dans ``load_excel_files``.
+- **Scalable** : voir note de scalabilité dans ``load_source_files``.
 
 Dépendances :
     pandas, openpyxl, reportlab  (voir requirements.txt)
@@ -40,6 +41,9 @@ FailedFiles = list[tuple[str, str]]
 # Résultat du chargement Streamlit : (dataframe_consolidé, fichiers_en_erreur)
 LoadResult = tuple[pd.DataFrame, FailedFiles]
 
+# Extensions de fichiers sources reconnues (minuscules, sans point)
+_SOURCE_EXTENSIONS: frozenset[str] = frozenset(SETTINGS.csv_source_extensions)
+
 
 @runtime_checkable
 class UploadedFileProtocol(Protocol):
@@ -49,7 +53,7 @@ class UploadedFileProtocol(Protocol):
     garder utils.py indépendant de Streamlit → testable avec de simples io.BytesIO.
     """
 
-    name: str  # nom du fichier (ex: "ventes_2025-01.xlsx")
+    name: str  # nom du fichier (ex: "ventes_2025-01.xlsx" ou "export_crm.csv")
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +103,9 @@ def hash_file_on_disk(path: Path) -> str:
     Lecture par blocs de 64 Ko pour éviter de charger tout le fichier en RAM
     (indispensable pour la scalabilité avec des fichiers volumineux).
 
+    Note : fonctionne identiquement pour les .xlsx et les .csv — le hash porte
+    sur les octets bruts du fichier, indépendamment du format.
+
     Args:
         path: Chemin du fichier à hacher.
 
@@ -120,6 +127,7 @@ def hash_bytes(data: bytes) -> str:
     """Calcule l'empreinte SHA-256 d'un contenu binaire en mémoire.
 
     Utilisé pour les fichiers uploadés via Streamlit (déjà chargés en RAM).
+    Fonctionne pour tout format binaire : .xlsx, .csv, etc.
 
     Args:
         data: Contenu binaire du fichier.
@@ -257,7 +265,7 @@ def reconcile_data(
     **Note de scalabilité (volumétrie ×100) :**
     Avec ~2M de lignes, cette fonction reste O(n) grâce à la vectorisation pandas.
     Au-delà de 10M de lignes, utiliser Polars (lazy evaluation) ou traiter par
-    chunks avec ``pd.read_excel(..., chunksize=50_000)`` et agréger les sommes.
+    chunks avec ``pd.read_csv(..., chunksize=50_000)`` et agréger les sommes.
 
     Args:
         df_source: DataFrame brut **avant** tout nettoyage, colonnes normalisées
@@ -275,30 +283,19 @@ def reconcile_data(
     processed_count = len(df_processed)
 
     # --- Simulation du nettoyage sur la source pour calculer la somme "attendue" ---
-    # On reproduit UNIQUEMENT les règles de filtrage de clean_data() :
-    #   1. Suppression des lignes entièrement vides
-    #   2. Suppression des lignes à date invalide
-    # On NE supprime PAS les montants invalides (ils deviennent NaN → exclus de sum()).
     df_sim = df_source.dropna(how="all").copy()
-
-    # --- Normalisation défensive de df_source ---
-    # df_source peut arriver brut depuis load_excel_files() (espaces parasites,
-    # majuscules). On applique ici exactement les deux premières étapes de clean_data()
-    # pour rendre reconcile_data() indépendante de l'état de normalisation de l'appelant.
 
     # Étape A : normaliser les noms de colonnes (strip + lower)
     df_sim.columns = df_sim.columns.astype(str).str.strip().str.lower()
 
-    # Étape B : fusionner les colonnes dupliquées résultant du concat multi-fichiers.
-    # Sans cette étape, df_sim[date_col] renverrait un DataFrame (et non une Series)
-    # dès qu'un doublon existe → ValueError dans pd.to_datetime.
+    # Étape B : fusionner les colonnes dupliquées
     if df_sim.columns.duplicated().any():
         for dup_col in df_sim.columns[df_sim.columns.duplicated()].unique():
             sub_df = df_sim.loc[:, df_sim.columns == dup_col]
             df_sim = df_sim.drop(columns=dup_col)
             df_sim[dup_col] = sub_df.bfill(axis=1).iloc[:, 0]
 
-    # Étape 1 : Parser les dates (même paramètre dayfirst=True que dans clean_data)
+    # Étape 1 : Parser les dates
     if date_col in df_sim.columns:
         parsed_dates = pd.to_datetime(df_sim[date_col], dayfirst=True, errors="coerce")
     else:
@@ -320,7 +317,6 @@ def reconcile_data(
         )
         parsed_amounts = pd.to_numeric(amounts_str, errors="coerce")
         invalid_amount_count = int(parsed_amounts.isna().sum())
-        # sum() ignore naturellement les NaN → comportement identique à clean_data()
         expected_source_sum = float(parsed_amounts.sum())
     else:
         expected_source_sum = 0.0
@@ -338,8 +334,6 @@ def reconcile_data(
     if expected_source_sum != 0.0:
         gap_pct = absolute_gap / abs(expected_source_sum)
     else:
-        # Si la source est à zéro et le traité aussi → pas d'écart.
-        # Si la source est à zéro mais le traité ne l'est pas → 100 % d'écart.
         gap_pct = 0.0 if processed_sum == 0.0 else 1.0
 
     tolerance = SETTINGS.reconciliation_tolerance_pct
@@ -381,11 +375,130 @@ def reconcile_data(
 
 
 # ---------------------------------------------------------------------------
+# CHARGEMENT - Lecture CSV robuste (helper privé)
+# ---------------------------------------------------------------------------
+
+def _read_csv_robust(source: Any, filename: str) -> pd.DataFrame:
+    """Lit un fichier CSV avec détection automatique du séparateur et fallback d'encodages.
+
+    **Problématique CSV en contexte PME française :**
+    Les exports de CRM, ERP et Excel français produisent des CSV hétérogènes :
+    - Séparateur `;` (standard Excel FR) ou `,` (standard international)
+    - Encodage latin-1/cp1252 (anciens systèmes Windows) ou utf-8 (modernes)
+    - BOM utf-8-sig ajouté par Excel lors d'un export "CSV UTF-8"
+
+    ``sep=None, engine="python"`` délègue la détection du séparateur au moteur
+    Python de pandas (``csv.Sniffer``), qui inspecte les premières lignes du
+    fichier. Plus coûteux que de fixer le séparateur manuellement, mais indispensable
+    pour l'universalité (PME ≠ un seul système source).
+
+    **Note de scalabilité :**
+    Pour des CSV > 500 Mo, envisager ``pd.read_csv(..., chunksize=50_000)``
+    et concaténer les chunks. La détection auto du séparateur ne supporte pas
+    le mode chunked → pré-détecter le séparateur en lisant uniquement les
+    premières lignes (``nrows=5``), puis relire en mode chunked.
+
+    Args:
+        source: Chemin disque (Path/str) ou buffer mémoire (io.BytesIO).
+            En mode buffer (Streamlit), la position est réinitialisée (seek(0))
+            avant chaque tentative d'encodage pour éviter une lecture partielle.
+        filename: Nom du fichier (pour les messages de log uniquement).
+
+    Returns:
+        DataFrame pandas avec les données du CSV.
+
+    Raises:
+        ValueError: Si aucun encodage de la liste ``SETTINGS.csv_encodings_fallback``
+            ne permet de lire le fichier correctement.
+    """
+    last_error: Exception = Exception("Aucune tentative effectuée")
+
+    for encoding in SETTINGS.csv_encodings_fallback:
+        try:
+            # Réinitialisation du curseur à chaque tentative si c'est un buffer.
+            # Indispensable : une tentative échouée déplace le curseur en position
+            # arbitraire, ce qui corromprait la lecture suivante.
+            if hasattr(source, "seek"):
+                source.seek(0)
+
+            df = pd.read_csv(
+                source,
+                sep=None,           # détection automatique du séparateur (Sniffer)
+                engine="python",    # seul engine supportant sep=None
+                encoding=encoding,
+                on_bad_lines="warn",  # lignes malformées loggées, pas bloquantes
+            )
+            logging.info(
+                f"CSV '{filename}' lu avec encodage '{encoding}' "
+                f"({len(df)} lignes, {len(df.columns)} colonnes)"
+            )
+            return df
+
+        except UnicodeDecodeError as exc:
+            # Encodage incompatible : on tente le suivant dans la liste.
+            logging.debug(
+                f"CSV '{filename}' : encodage '{encoding}' incompatible → "
+                f"tentative suivante. Détail : {exc}"
+            )
+            last_error = exc
+        except Exception as exc:
+            # Erreur structurelle (fichier vide, non-CSV, etc.) : inutile de
+            # tester d'autres encodages, on abandonne immédiatement.
+            logging.error(f"CSV '{filename}' : erreur structurelle → {exc}")
+            raise ValueError(
+                f"Impossible de lire le CSV '{filename}' : {exc}"
+            ) from exc
+
+    raise ValueError(
+        f"Impossible de lire le CSV '{filename}' avec les encodages testés "
+        f"({list(SETTINGS.csv_encodings_fallback)}). "
+        f"Dernière erreur : {last_error}"
+    )
+
+
+def _read_single_file(source: Any, filename: str) -> pd.DataFrame:
+    """Dispatcher : lit un fichier Excel ou CSV selon son extension.
+
+    **Principe de conception (Single Responsibility) :**
+    Ce helper centralise la décision de format en un seul endroit. Tous les
+    appelants (``load_source_files``, ``read_uploaded_files``) délèguent ici,
+    ce qui garantit qu'ajouter un nouveau format (ex: .ods) ne nécessite
+    de modifier qu'une seule fonction.
+
+    Les deux branches produisent un ``pd.DataFrame`` identique en sortie.
+    Tout le reste du pipeline (nettoyage, réconciliation, export) est
+    **format-agnostique** et ne nécessite aucune modification.
+
+    Args:
+        source: Chemin disque (Path/str) ou buffer mémoire (io.BytesIO).
+        filename: Nom du fichier, utilisé uniquement pour détecter l'extension
+            et pour les messages de log.
+
+    Returns:
+        DataFrame pandas brut (colonnes non normalisées, valeurs brutes).
+
+    Raises:
+        ValueError: Si le format n'est pas reconnu ou si la lecture échoue.
+    """
+    ext = Path(filename).suffix.lower().lstrip(".")
+
+    if ext == "csv":
+        return _read_csv_robust(source, filename)
+    elif ext == "xlsx":
+        return pd.read_excel(source, engine="openpyxl")
+    else:
+        raise ValueError(
+            f"Format non supporté : '.{ext}' (fichier : '{filename}'). "
+            f"Formats acceptés : {sorted(_SOURCE_EXTENSIONS)}."
+        )
+
+
+# ---------------------------------------------------------------------------
 # CHARGEMENT - Mode Batch (disque)
 # ---------------------------------------------------------------------------
 
-def load_excel_files(folder_path: str) -> pd.DataFrame:
-    """Lit tous les fichiers ``.xlsx`` d'un répertoire et les concatène.
+def load_source_files(folder_path: str) -> pd.DataFrame:
+    """Lit tous les fichiers sources (.xlsx et .csv) d'un répertoire et les concatène.
 
     Continue même si certains fichiers sont corrompus, protégés ou mal formés.
     Chaque fichier lisible est tracé avec son hash SHA-256 pour l'audit.
@@ -393,15 +506,18 @@ def load_excel_files(folder_path: str) -> pd.DataFrame:
     Les fichiers temporaires Excel (``~$...``) sont ignorés automatiquement
     (Excel les crée quand un fichier est ouvert par un autre processus).
 
+    **Extensions supportées :** définies dans ``SETTINGS.csv_source_extensions``
+    (par défaut : xlsx, csv). Modifiable sans toucher au code.
+
     **Note de scalabilité (volumétrie ×100) :**
     Avec 10M+ de lignes, privilégier :
-    - ``pd.read_excel(..., engine="calamine")`` (plus rapide qu'openpyxl) ;
+    - ``pd.read_csv(..., engine="pyarrow")`` pour les CSV (x3-5 plus rapide) ;
     - Migration vers Parquet/DuckDB pour le stockage intermédiaire ;
-    - Polars ``pl.read_excel`` avec lazy evaluation.
+    - Polars ``pl.read_csv`` / ``pl.read_excel`` avec lazy evaluation.
     Complexité globale : O(n × k) avec n = lignes totales, k = fichiers.
 
     Args:
-        folder_path: Chemin du répertoire contenant les fichiers ``.xlsx``.
+        folder_path: Chemin du répertoire contenant les fichiers sources.
 
     Returns:
         DataFrame consolidé (toutes lignes, toutes colonnes).
@@ -409,23 +525,37 @@ def load_excel_files(folder_path: str) -> pd.DataFrame:
     Raises:
         ValueError: Si aucun fichier n'est lisible dans le répertoire.
     """
-    files = [
-        f for f in Path(folder_path).glob("*.xlsx")
-        if not f.name.startswith("~$")  # fichiers temporaires Excel exclus
-    ]
-    logging.info(f"{len(files)} fichier(s) .xlsx détecté(s) dans '{folder_path}'")
+    folder = Path(folder_path)
+
+    # Collecte de tous les fichiers des formats supportés, en excluant les
+    # fichiers temporaires Excel (préfixe ~$) qui ne sont pas des données réelles.
+    files: list[Path] = []
+    for ext in SETTINGS.csv_source_extensions:
+        files.extend(
+            f for f in folder.glob(f"*.{ext}")
+            if not f.name.startswith("~$")
+        )
+
+    # Tri alphabétique → ordre d'exécution reproductible d'une run à l'autre.
+    files = sorted(files)
+
+    logging.info(
+        f"{len(files)} fichier(s) source(s) détecté(s) dans '{folder_path}' "
+        f"(formats : {sorted(_SOURCE_EXTENSIONS)})"
+    )
 
     dfs: list[pd.DataFrame] = []
     error_count = 0
 
-    for file_path in sorted(files):  # ordre alphabétique → exécutions reproductibles
+    for file_path in files:
         try:
             file_hash = hash_file_on_disk(file_path)
+            fmt = file_path.suffix.upper().lstrip(".")
             logging.info(
-                f"Lecture : {file_path.name} | "
+                f"Lecture [{fmt}] : {file_path.name} | "
                 f"{SETTINGS.hash_algorithm.upper()} : {file_hash}"
             )
-            df = pd.read_excel(file_path, engine="openpyxl")
+            df = _read_single_file(str(file_path), file_path.name)
             dfs.append(df)
             logging.info(f"  ✓ {len(df)} lignes lues")
 
@@ -438,23 +568,34 @@ def load_excel_files(folder_path: str) -> pd.DataFrame:
 
     if not dfs:
         raise ValueError(
-            f"Aucun fichier .xlsx lisible dans '{folder_path}'. "
-            "Vérifiez que le dossier contient des fichiers valides et non protégés."
+            f"Aucun fichier source lisible dans '{folder_path}'. "
+            "Vérifiez que le dossier contient des fichiers .xlsx ou .csv "
+            "valides et non protégés."
         )
 
     return pd.concat(dfs, ignore_index=True)
+
+
+# Alias de rétrocompatibilité : main.py v1 appelait load_excel_files().
+# Permet une migration progressive sans casser les scripts existants.
+load_excel_files = load_source_files
 
 
 # ---------------------------------------------------------------------------
 # CHARGEMENT - Mode Streamlit (fichiers uploadés en mémoire)
 # ---------------------------------------------------------------------------
 
-def read_uploaded_excels(uploaded_files: list[Any]) -> LoadResult:
-    """Lit des fichiers uploadés via Streamlit et les concatène.
+def read_uploaded_files(uploaded_files: list[Any]) -> LoadResult:
+    """Lit des fichiers uploadés via Streamlit (.xlsx et .csv) et les concatène.
 
     Accepte tout objet ayant un attribut ``name`` et compatible avec
-    ``pd.read_excel()`` (ex: ``streamlit.UploadedFile``, ``io.BytesIO``).
-    Continue même si certains fichiers sont illisibles.
+    ``pd.read_excel()`` ou ``pd.read_csv()`` (ex: ``streamlit.UploadedFile``,
+    ``io.BytesIO``). Continue même si certains fichiers sont illisibles.
+
+    **Détection du format :** basée sur l'extension du nom de fichier (attribut
+    ``name``), pas sur le contenu (magic bytes). Justification : les PME renomment
+    rarement leurs exports, et la détection par contenu serait plus complexe pour
+    un gain marginal.
 
     Args:
         uploaded_files: Liste de fichiers uploadés (objets Streamlit ou BytesIO).
@@ -471,21 +612,74 @@ def read_uploaded_excels(uploaded_files: list[Any]) -> LoadResult:
 
     for f in uploaded_files:
         filename = getattr(f, "name", "fichier_sans_nom.xlsx")
+        ext = Path(filename).suffix.lower().lstrip(".")
+
+        if ext not in _SOURCE_EXTENSIONS:
+            failed_files.append((
+                filename,
+                f"Extension '.{ext}' non supportée. Formats acceptés : "
+                f"{sorted(_SOURCE_EXTENSIONS)}."
+            ))
+            logging.warning(f"Extension non supportée ignorée : {filename}")
+            continue
+
         try:
-            df = pd.read_excel(f, engine="openpyxl")
+            # Pour les BytesIO uploadés via Streamlit, on crée un buffer frais
+            # afin de permettre une re-lecture propre (getvalue() retourne
+            # les bytes depuis le début, indépendamment de la position du curseur).
+            if hasattr(f, "getvalue"):
+                source = io.BytesIO(f.getvalue())
+            else:
+                source = f
+
+            df = _read_single_file(source, filename)
             dfs.append(df)
-            logging.info(f"Upload OK : {filename} ({len(df)} lignes)")
+            fmt = ext.upper()
+            logging.info(f"Upload OK [{fmt}] : {filename} ({len(df)} lignes)")
+
         except Exception as exc:
             failed_files.append((filename, str(exc)))
             logging.error(f"Upload KO : {filename} | {exc}")
 
     if not dfs:
         raise ValueError(
-            "Aucun fichier Excel lisible parmi ceux uploadés. "
-            "Vérifiez le format (doit être .xlsx réel, non protégé, non corrompu)."
+            "Aucun fichier source lisible parmi ceux uploadés. "
+            "Vérifiez le format (doit être .xlsx ou .csv réel, "
+            "non protégé, non corrompu)."
         )
 
     return pd.concat(dfs, ignore_index=True), failed_files
+
+
+def read_one_uploaded_file(f: Any) -> pd.DataFrame:
+    """Lit un seul fichier uploadé et retourne son DataFrame brut non nettoyé.
+
+    Utilisé par app.py pour la déduplication inter-formats (ex: même fichier
+    présent en .xlsx et en .csv). Lire chaque fichier individuellement avant
+    de les concaténer permet de calculer une empreinte *métier* par fichier.
+
+    Args:
+        f: Fichier uploadé Streamlit (UploadedFile) ou io.BytesIO.
+            Doit avoir un attribut ``name`` pour la détection du format.
+
+    Returns:
+        DataFrame brut (colonnes et valeurs telles que lues, sans nettoyage).
+
+    Raises:
+        ValueError: Si le format n'est pas supporté ou si la lecture échoue.
+    """
+    filename = getattr(f, "name", "fichier_sans_nom")
+    # Créer un buffer frais depuis getvalue() pour garantir une lecture depuis
+    # le début, indépendamment de la position courante du curseur de f.
+    if hasattr(f, "getvalue"):
+        source = io.BytesIO(f.getvalue())
+    else:
+        source = f
+    return _read_single_file(source, filename)
+
+
+# Alias de rétrocompatibilité : app.py v1 appelait read_uploaded_excels().
+read_uploaded_excels = read_uploaded_files
 
 
 # ---------------------------------------------------------------------------
@@ -497,11 +691,11 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     Transformations appliquées (dans l'ordre) :
     1. **Normalisation des noms de colonnes** : strip + lower.
-       Raison : les exports Excel ont souvent des espaces parasites et des casses variées.
+       Raison : les exports Excel/CSV ont souvent des espaces parasites et des casses variées.
     2. **Fusion des colonnes dupliquées** : priorité à la première valeur non-nulle.
        Raison : certains exports concatenent des fichiers avec des colonnes
        portant le même nom après normalisation.
-    3. **Suppression des lignes entièrement vides** : artefacts Excel courants.
+    3. **Suppression des lignes entièrement vides** : artefacts Excel/CSV courants.
     4. **Validation du schéma** via ``DATA_DICTIONARY`` (colonnes requises).
     5. **Nettoyage des montants** : gestion des formats FR (virgule) et EN (point),
        espaces insécables, valeurs texte → NaN conservés (tracés, exclus du CA).
@@ -519,6 +713,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     Args:
         df: DataFrame brut après chargement. Les colonnes peuvent être "sales"
             (espaces, majuscules, virgules dans les montants, dates invalides).
+            Fonctionne identiquement qu'il provienne d'un .xlsx ou d'un .csv.
 
     Returns:
         DataFrame nettoyé avec colonnes ``date`` (datetime64) et ``montant`` (float64).
@@ -532,8 +727,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.astype(str).str.strip().str.lower()
 
     # --- 2. Fusion des colonnes dupliquées ---
-    # Technique : bfill sur l'axe des colonnes → première valeur non-nulle par ligne.
-    # Complexité : O(n × d) avec d = nombre de colonnes dupliquées (généralement 0 ou 1).
     if df.columns.duplicated().any():
         duplicate_names: list[str] = df.columns[df.columns.duplicated()].unique().tolist()
         logging.warning(f"Colonnes dupliquées détectées (fusion) : {duplicate_names}")
@@ -551,23 +744,21 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         logging.info(f"Lignes entièrement vides supprimées : {empty_row_count}")
 
     # --- 4. Validation du schéma via DATA_DICTIONARY ---
-    check_required_columns(df)  # lève ValueError si colonne requise manquante
+    check_required_columns(df)
 
     # --- 5. Nettoyage et conversion des montants ---
-    # Conservation d'une copie brute pour les logs (supprimée avant export).
     raw_amounts = df["montant"].copy()
 
     amounts_str = (
         df["montant"]
         .astype(str)
         .str.strip()
-        .str.replace(",", ".", regex=False)       # 1 234,56 → 1 234.56
-        .str.replace("\u00a0", "", regex=False)   # espace insécable milliers
-        .str.replace(" ", "", regex=False)        # espace standard milliers
+        .str.replace(",", ".", regex=False)
+        .str.replace("\u00a0", "", regex=False)
+        .str.replace(" ", "", regex=False)
     )
     df["montant"] = pd.to_numeric(amounts_str, errors="coerce")
 
-    # Log des anomalies de montants pour traçabilité d'audit
     empty_source_count = int(
         raw_amounts.isna().sum()
         + (raw_amounts.astype(str).str.strip() == "").sum()
@@ -680,30 +871,16 @@ def aggregate_by_salesperson(df: pd.DataFrame) -> pd.DataFrame:
 # EXPORTS - Helpers privés de mise en forme Excel
 # ---------------------------------------------------------------------------
 
-def _format_excel_sheet(ws: Any) -> None:  # ws: openpyxl.worksheet.Worksheet
-    """Applique le formatage openpyxl standard à une feuille Excel.
-
-    Formatages appliqués :
-    - En-têtes en gras.
-    - Ligne 1 figée (freeze panes).
-    - Largeur de colonnes auto-ajustée (min/max depuis SETTINGS).
-    - Format date DD/MM/YYYY sur la colonne ``date``.
-    - Format monétaire EUR sur les colonnes financières.
-
-    Args:
-        ws: Feuille openpyxl à formater (modifiée en place).
-    """
+def _format_excel_sheet(ws: Any) -> None:
+    """Applique le formatage openpyxl standard à une feuille Excel."""
     from openpyxl.styles import Font
     from openpyxl.styles import numbers as openpyxl_numbers
 
-    # En-têtes en gras
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
-    # Ligne 1 figée
     ws.freeze_panes = "A2"
 
-    # Ajustement automatique de la largeur des colonnes
     for col_cells in ws.columns:
         col_letter = col_cells[0].column_letter
         header = str(col_cells[0].value) if col_cells[0].value else ""
@@ -721,7 +898,6 @@ def _format_excel_sheet(ws: Any) -> None:  # ws: openpyxl.worksheet.Worksheet
 
         ws.column_dimensions[col_letter].width = min(width, SETTINGS.excel_max_col_width)
 
-    # Formats date et monnaie
     headers = [cell.value for cell in ws[1]]
     header_idx: dict[str, int] = {h: i + 1 for i, h in enumerate(headers) if h}
 
@@ -741,18 +917,7 @@ def _prepare_report_exports(
     report_months: pd.DataFrame,
     report_salespeople: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Prépare des copies des rapports pour l'export (renommage colonne montant).
-
-    La colonne interne s'appelle ``montant`` (pratique pour le code).
-    Dans les exports, on utilise ``montant en euros`` (plus explicite pour l'utilisateur).
-
-    Args:
-        report_months: Rapport par mois avec colonne ``montant``.
-        report_salespeople: Rapport par commercial avec colonne ``montant``.
-
-    Returns:
-        Tuple (rapport_mois_export, rapport_commercial_export) avec colonne renommée.
-    """
+    """Prépare des copies des rapports pour l'export (renommage colonne montant)."""
     months_copy = report_months.copy()
     salespeople_copy = report_salespeople.copy()
 
@@ -774,22 +939,7 @@ def export_excel(
     report_salespeople: pd.DataFrame,
     filepath: Path,
 ) -> Path:
-    """Exporte les données et rapports dans un fichier Excel multi-feuilles.
-
-    Crée le répertoire parent si nécessaire.
-
-    Args:
-        df: Données nettoyées (feuille "Donnees_brutes").
-        report_months: Rapport par mois (feuille "Total_par_mois").
-        report_salespeople: Rapport par commercial (feuille "Total_par_commercial").
-        filepath: Chemin de destination du fichier .xlsx.
-
-    Returns:
-        Path du fichier créé.
-
-    Raises:
-        Exception: Propagée si l'écriture échoue (disque plein, droits, etc.).
-    """
+    """Exporte les données et rapports dans un fichier Excel multi-feuilles."""
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     months_export, salespeople_export = _prepare_report_exports(
         report_months, report_salespeople
@@ -812,14 +962,7 @@ def export_excel(
 
 
 def format_excel_file(filepath: Path) -> Path:
-    """Applique le formatage openpyxl à un fichier Excel existant sur le disque.
-
-    Args:
-        filepath: Chemin du fichier .xlsx à formater (modifié en place).
-
-    Returns:
-        Path du fichier formaté.
-    """
+    """Applique le formatage openpyxl à un fichier Excel existant sur le disque."""
     from openpyxl import load_workbook
 
     wb = load_workbook(filepath)
@@ -840,18 +983,7 @@ def build_excel_bytes(
     report_months: pd.DataFrame,
     report_salespeople: pd.DataFrame,
 ) -> bytes:
-    """Génère un fichier Excel multi-feuilles en mémoire (pour téléchargement Streamlit).
-
-    Identique à ``export_excel`` mais retourne des bytes au lieu d'écrire sur disque.
-
-    Args:
-        df: Données nettoyées.
-        report_months: Rapport par mois.
-        report_salespeople: Rapport par commercial.
-
-    Returns:
-        Contenu du fichier .xlsx sous forme de bytes.
-    """
+    """Génère un fichier Excel multi-feuilles en mémoire (pour téléchargement Streamlit)."""
     months_export, salespeople_export = _prepare_report_exports(
         report_months, report_salespeople
     )
@@ -867,16 +999,7 @@ def build_excel_bytes(
 
 
 def format_excel_bytes(excel_bytes: bytes) -> bytes:
-    """Applique le formatage openpyxl à un fichier Excel en mémoire.
-
-    Utilisé par app.py après ``build_excel_bytes``.
-
-    Args:
-        excel_bytes: Contenu brut d'un fichier .xlsx.
-
-    Returns:
-        Contenu du fichier .xlsx formaté.
-    """
+    """Applique le formatage openpyxl à un fichier Excel en mémoire."""
     from openpyxl import load_workbook
 
     buf = io.BytesIO(excel_bytes)
@@ -898,15 +1021,7 @@ def _build_pdf_elements(
     report_months: pd.DataFrame,
     report_salespeople: pd.DataFrame,
 ) -> list[Any]:
-    """Construit la liste des éléments ReportLab pour le PDF.
-
-    Args:
-        report_months: Rapport mensuel (colonne ``montant``).
-        report_salespeople: Rapport par commercial (colonne ``montant``).
-
-    Returns:
-        Liste d'éléments ReportLab (Paragraph, Table, Spacer).
-    """
+    """Construit la liste des éléments ReportLab pour le PDF."""
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
@@ -928,7 +1043,6 @@ def _build_pdf_elements(
     )
     elements.append(Spacer(1, 12))
 
-    # Copie + arrondi + renommage pour l'affichage PDF
     report_months = report_months.copy()
     report_salespeople = report_salespeople.copy()
     for d in (report_months, report_salespeople):
@@ -969,15 +1083,7 @@ def build_pdf_bytes(
     report_months: pd.DataFrame,
     report_salespeople: pd.DataFrame,
 ) -> bytes:
-    """Génère un rapport PDF en mémoire (pour téléchargement Streamlit).
-
-    Args:
-        report_months: Rapport par mois.
-        report_salespeople: Rapport par commercial.
-
-    Returns:
-        Contenu du fichier PDF sous forme de bytes.
-    """
+    """Génère un rapport PDF en mémoire (pour téléchargement Streamlit)."""
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate
 
@@ -993,18 +1099,7 @@ def export_pdf(
     report_salespeople: pd.DataFrame,
     out_dir: Path,
 ) -> Path:
-    """Exporte le rapport PDF sur le disque.
-
-    Le nom du fichier est dérivé de la période couverte par les données.
-
-    Args:
-        report_months: Rapport par mois.
-        report_salespeople: Rapport par commercial.
-        out_dir: Répertoire de destination.
-
-    Returns:
-        Path du fichier PDF créé.
-    """
+    """Exporte le rapport PDF sur le disque."""
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate
 

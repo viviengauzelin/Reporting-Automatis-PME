@@ -44,7 +44,7 @@ class AppSettings:
     C'est essentiel pour la traçabilité en contexte d'audit.
 
     Attributes:
-        data_dir: Répertoire des fichiers sources Excel (mode Batch).
+        data_dir: Répertoire des fichiers sources Excel/CSV (mode Batch).
         output_dir: Répertoire des fichiers générés (Excel, PDF, logs).
         app_name: Nom de l'application (affiché dans les rapports).
         app_version: Version sémantique (tracée dans les logs).
@@ -57,6 +57,14 @@ class AppSettings:
         reconciliation_tolerance_pct: Tolérance des données pour la réconciliation.
             Exemple : 0.001 = 0.1 % d'écart autorisé (arrondis flottants IEEE 754).
             Au-delà → alerte d'intégrité levée.
+        csv_encodings_fallback: Séquence d'encodages testés lors de la lecture d'un CSV.
+            Justification : les exports Windows (Excel, CRM, ERP) produisent souvent
+            du latin-1 ou cp1252, tandis que les exports modernes utilisent utf-8
+            avec ou sans BOM (utf-8-sig). L'ordre reflète la fréquence rencontrée
+            dans les PME françaises.
+        csv_source_extensions: Extensions de fichiers sources acceptées (mode Batch).
+            Permet d'étendre facilement le support à d'autres formats sans
+            modifier la logique de chargement.
     """
 
     # --- Chemins (surchargeables via .env) ---
@@ -69,7 +77,7 @@ class AppSettings:
 
     # --- Application ---
     app_name: str = "Reporting démo"
-    app_version: str = "2.0.0"
+    app_version: str = "2.1.0"
     log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
 
     # --- Mise en forme Excel ---
@@ -90,6 +98,20 @@ class AppSettings:
     reconciliation_tolerance_pct: float = field(
         default_factory=lambda: float(os.getenv("RECON_TOLERANCE_PCT", "0.001"))
     )
+
+    # --- Lecture CSV ---
+    # Ordre des encodages testés : du plus courant en contexte français au plus rare.
+    # utf-8-sig : utf-8 avec BOM (exports Excel "Enregistrer sous CSV UTF-8")
+    # utf-8     : exports modernes (Python, API, Linux)
+    # latin-1   : anciens exports ERP/CRM Windows (ISO-8859-1)
+    # cp1252    : Windows Western European (surensemble de latin-1, caractères €, etc.)
+    csv_encodings_fallback: tuple[str, ...] = (
+        "utf-8-sig", "utf-8", "latin-1", "cp1252"
+    )
+
+    # Extensions acceptées en mode Batch (glob patterns sans le point).
+    # L'ordre détermine la priorité d'affichage dans les logs, pas le traitement.
+    csv_source_extensions: tuple[str, ...] = ("xlsx", "csv")
 
 
 # Singleton global - importé par utils.py et app.py
@@ -122,7 +144,7 @@ class ColSpec:
 
 
 # Schéma canonique - clé = nom de colonne interne normalisé (après strip + lower).
-# Les clés sont des noms de colonnes métier français, conformes aux fichiers sources Excel.
+# Les clés sont des noms de colonnes métier français, conformes aux fichiers sources Excel/CSV.
 DATA_DICTIONARY: dict[str, ColSpec] = {
     "date": ColSpec(
         description=(

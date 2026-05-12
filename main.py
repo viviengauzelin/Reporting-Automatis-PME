@@ -10,6 +10,8 @@ Usage planifié (Windows - Planificateur de tâches) :
 Ce script est intentionnellement minimal : il orchestre les appels à utils.py
 sans contenir de logique métier. Toute la logique est dans utils.py.
 Les chemins et constantes proviennent de config.SETTINGS (surchargeable via .env).
+
+Formats sources supportés : .xlsx et .csv (détectés automatiquement).
 """
 
 from __future__ import annotations
@@ -27,7 +29,7 @@ def main() -> None:
 
     Pipeline :
         1. Initialisation du logging (fichier horodaté dans output/).
-        2. Chargement robuste des fichiers .xlsx (data/).
+        2. Chargement robuste des fichiers sources (.xlsx et .csv depuis data/).
         3. Nettoyage et enrichissement (colonne mois).
         4. Checkpoint de réconciliation des données (audit).
         5. Calcul des reportings (par mois, par commercial).
@@ -46,17 +48,19 @@ def main() -> None:
         SystemExit(2): Si le checkpoint de réconciliation échoue.
     """
     # 1. Logging
-    # Utilise SETTINGS.output_dir (configurable via .env) plutôt qu'un chemin hardcodé.
     log_path = utils.setup_logging(base_dir=str(SETTINGS.output_dir))
     logging.info(f"=== DÉMARRAGE - {SETTINGS.app_name} v{SETTINGS.app_version} ===")
     logging.info(f"Log : {log_path}")
     logging.info(f"Répertoire source : {SETTINGS.data_dir}")
     logging.info(f"Répertoire sortie : {SETTINGS.output_dir}")
+    logging.info(
+        f"Formats sources acceptés : {sorted(SETTINGS.csv_source_extensions)}"
+    )
 
-    # 2. Chargement robuste
+    # 2. Chargement robuste (.xlsx + .csv)
     # ValueError si aucun fichier lisible → sortie propre (code 0, pas une erreur fatale).
     try:
-        df_source = utils.load_excel_files(str(SETTINGS.data_dir))
+        df_source = utils.load_source_files(str(SETTINGS.data_dir))
     except ValueError as e:
         logging.warning(f"{e} → Fin sans traitement.")
         logging.info("=== FIN (AUCUN FICHIER) ===")
@@ -66,14 +70,13 @@ def main() -> None:
     logging.info(f"Lignes chargées (avant nettoyage) : {source_row_count}")
 
     # 3. Nettoyage + enrichissement
+    # clean_data() est format-agnostique : fonctionne identiquement qu'il
+    # provienne de fichiers .xlsx, .csv, ou d'un mix des deux.
     df = utils.clean_data(df_source)
     df = utils.add_month_column(df)
 
     # 4. Checkpoint de réconciliation des données
-    # Compare la somme source (lignes à date valide) avec la somme traitée
-    # pour prouver l'absence de perte ou d'altération silencieuse de données.
     recon_report = utils.reconcile_data(df_source, df)
-    # Le message est déjà loggué en interne par reconcile_data() - pas de doublon ici.
 
     if not recon_report.integrity_ok:
         logging.critical(
@@ -84,7 +87,7 @@ def main() -> None:
             f"Somme traitée : {recon_report.processed_sum:.2f} €"
         )
         logging.info("=== FIN (ÉCHEC INTÉGRITÉ) ===")
-        sys.exit(2)  # code 2 : détectable par un planificateur ou script de supervision
+        sys.exit(2)
 
     # 5. Reportings
     report_months = utils.aggregate_by_month(df)
@@ -95,7 +98,6 @@ def main() -> None:
     logging.info(f"Période : {df['mois'].min()} → {df['mois'].max()}")
 
     # 6. Export Excel
-    # Nom du fichier basé sur la période couverte par les données (reproductible).
     min_month = df["mois"].min()
     max_month = df["mois"].max()
     year = str(min_month).split("-")[0]
@@ -105,7 +107,6 @@ def main() -> None:
         else f"reporting_{min_month}_to_{max_month}.xlsx"
     )
 
-    # Sous-dossier par année pour éviter l'accumulation à la racine de output/
     out_dir = SETTINGS.output_dir / year
     out_dir.mkdir(parents=True, exist_ok=True)
 
