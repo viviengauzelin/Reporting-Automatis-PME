@@ -22,6 +22,7 @@ from pathlib import Path
 
 import utils
 from config import SETTINGS
+from workbook import export_excel_with_dashboard
 
 
 def main() -> None:
@@ -111,8 +112,9 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     excel_path = out_dir / excel_name
-    utils.export_excel(df, report_months, report_salespeople, excel_path)
-    utils.format_excel_file(excel_path)
+    export_excel_with_dashboard(
+        df, report_months, report_salespeople, recon_report, excel_path
+    )
 
     # 7. Export PDF
     utils.export_pdf(report_months, report_salespeople, out_dir)

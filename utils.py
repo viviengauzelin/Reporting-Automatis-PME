@@ -978,40 +978,7 @@ def format_excel_file(filepath: Path) -> Path:
 # EXPORTS - Mode Streamlit (bytes en mémoire)
 # ---------------------------------------------------------------------------
 
-def build_excel_bytes(
-    df: pd.DataFrame,
-    report_months: pd.DataFrame,
-    report_salespeople: pd.DataFrame,
-) -> bytes:
-    """Génère un fichier Excel multi-feuilles en mémoire (pour téléchargement Streamlit)."""
-    months_export, salespeople_export = _prepare_report_exports(
-        report_months, report_salespeople
-    )
-
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        df.to_excel(writer, sheet_name="Donnees_brutes", index=False)
-        months_export.to_excel(writer, sheet_name="Total_par_mois", index=False)
-        salespeople_export.to_excel(writer, sheet_name="Total_par_commercial", index=False)
-
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-def format_excel_bytes(excel_bytes: bytes) -> bytes:
-    """Applique le formatage openpyxl à un fichier Excel en mémoire."""
-    from openpyxl import load_workbook
-
-    buf = io.BytesIO(excel_bytes)
-    wb = load_workbook(buf)
-    for ws in wb.worksheets:
-        _format_excel_sheet(ws)
-
-    out = io.BytesIO()
-    wb.save(out)
-    out.seek(0)
-    return out.getvalue()
-
+# Géré via workbook.py
 
 # ---------------------------------------------------------------------------
 # EXPORTS - PDF

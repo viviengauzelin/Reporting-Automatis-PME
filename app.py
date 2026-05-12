@@ -23,14 +23,13 @@ import pandas as pd
 import streamlit as st
 
 from config import SETTINGS
+from workbook import build_excel_bytes_with_dashboard
 from utils import (
     add_month_column,
     aggregate_by_month,
     aggregate_by_salesperson,
-    build_excel_bytes,
     build_pdf_bytes,
     clean_data,
-    format_excel_bytes,
     hash_bytes,
     read_one_uploaded_file,
     reconcile_data,
@@ -474,8 +473,9 @@ if submitted:
             else f"{period_min}_to_{period_max}"
         )
 
-        excel_bytes = build_excel_bytes(df, report_months, report_salespeople)
-        excel_bytes = format_excel_bytes(excel_bytes)
+        excel_bytes = build_excel_bytes_with_dashboard(
+            df, report_months, report_salespeople, reconciliation_report
+        )
         pdf_bytes   = build_pdf_bytes(report_months, report_salespeople)
 
         log_lines += [
